@@ -1,1 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Listen Live</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="box">
+    <h2>🎧 Listen Live</h2>
+    <p id="status">Checking balance...</p>
+    <audio id="audio" controls autoplay></audio>
+  </div>
 
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    async function checkBalance() {
+      let username = getCookie("username");
+      let res = await fetch(`../admin/check.php?username=${username}`);
+      let data = await res.json();
+      if (data.coins >= 300) {
+        document.getElementById("status").innerText = "✅ You joined! 300 coins deducted.";
+        fetch(`../admin/deduct.php?username=${username}&amount=300`);
+        startListen();
+      } else {
+        document.getElementById("status").innerText = "❌ Not enough coins. Please buy first.";
+      }
+    }
+
+    function getCookie(name) {
+      let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+      return v ? v[2] : null;
+    }
+
+    let pc, socket, audio;
+    function startListen() {
+      socket = io();
+      audio = document.getElementById("audio");
+      pc = new RTCPeerConnection();
+
+      pc.ontrack = (event) => { audio.srcObject = event.streams[0]; };
+      pc.onicecandidate = (event) => { if (event.candidate) socket.emit("ice-candidate", event.candidate); };
+
+      join();
+      socket.on("answer", async (answer) => { await pc.setRemoteDescription(new RTCSessionDescription(answer)); });
+      socket.on("ice-candidate", async (c) => { await pc.addIceCandidate(new RTCIceCandidate(c)); });
+    }
+
+    async function join() {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("offer", offer);
+    }
+
+    checkBalance();
+  </script>
+</body>
+</html>
