@@ -1,1 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Broadcast</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="meeting-window">
+    <div class="video-box">
+      <video id="player" autoplay playsinline></video>
+      <div class="live-indicator">LIVE</div>
+    </div>
+    <div class="controls">
+      <button onclick="fullscreen()">⛶ Fullscreen</button>
+    </div>
+  </div>
 
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+  <script>
+    const socket = io();
+    let peer;
+
+    socket.emit("request-stream");
+
+    socket.on("signal", data => {
+      if (!peer) {
+        peer = new SimplePeer({ initiator: false, trickle: false });
+        peer.on("signal", signal => {
+          socket.emit("signal", { to: data.from, signal });
+        });
+        peer.on("stream", stream => {
+          document.getElementById("player").srcObject = stream;
+        });
+      }
+      peer.signal(data.signal);
+    });
+
+    socket.on("admin-left", () => {
+      alert("Admin disconnected. Stream ended.");
+      document.getElementById("player").srcObject = null;
+    });
+
+    function fullscreen() {
+      let video = document.getElementById("player");
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
+    }
+  </script>
+</body>
+</html>
