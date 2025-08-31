@@ -13,13 +13,11 @@ let adminId = null;
 io.on("connection", socket => {
     console.log("User connected:", socket.id);
 
-    // যখন Admin join করবে
     socket.on("join-as-admin", () => {
         adminId = socket.id;
         console.log("Admin joined:", adminId);
     });
 
-    // signaling data pass করা
     socket.on("signal", data => {
         io.to(data.to).emit("signal", {
             from: socket.id,
@@ -27,7 +25,6 @@ io.on("connection", socket => {
         });
     });
 
-    // user admin এর stream চাইবে
     socket.on("request-stream", () => {
         if (adminId) {
             io.to(adminId).emit("new-viewer", socket.id);
