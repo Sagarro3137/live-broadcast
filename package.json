@@ -1,8 +1,7 @@
-
 {
   "name": "live-broadcast",
-  "version": "1.0.0",
-  "description": "One-way broadcast system (Admin → Users)",
+  "version": "2.0.0",
+  "description": "Zoom-style one-way broadcast (Admin -> Users)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
