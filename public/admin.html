@@ -3,22 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Broadcast</title>
-  <style>
-    body { background:#111; color:#fff; text-align:center; font-family:Arial }
-    video { width: 480px; margin-top:20px; border:2px solid white; border-radius:8px }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Admin Live Broadcast</h2>
-  <video id="preview" autoplay playsinline muted></video>
-  
+  <div class="meeting-window">
+    <div class="video-box">
+      <video id="preview" autoplay playsinline muted></video>
+      <div class="live-indicator">LIVE</div>
+    </div>
+    <div class="controls">
+      <button onclick="toggleMic()">🎤 Mic</button>
+      <button onclick="toggleCam()">📷 Camera</button>
+      <button onclick="shareScreen()">🖥️ Share Screen</button>
+      <button onclick="endMeeting()">❌ End</button>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
   <script>
     const socket = io();
     let localStream;
+    let peers = {};
 
-    // মাইক + ক্যামেরা চালু
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
         document.getElementById("preview").srcObject = stream;
@@ -26,7 +33,6 @@
         socket.emit("join-as-admin");
       });
 
-    // নতুন viewer এলে
     socket.on("new-viewer", id => {
       const peer = new SimplePeer({ initiator: true, trickle: false, stream: localStream });
 
@@ -37,7 +43,39 @@
       socket.on("signal", data => {
         if (data.from === id) peer.signal(data.signal);
       });
+
+      peers[id] = peer;
     });
+
+    function toggleMic() {
+      localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+    }
+    function toggleCam() {
+      localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+    }
+    function shareScreen() {
+      navigator.mediaDevices.getDisplayMedia({ video: true }).then(screenStream => {
+        const track = screenStream.getTracks()[0];
+        for (let id in peers) {
+          const sender = peers[id]._pc.getSenders().find(s => s.track.kind === "video");
+          sender.replaceTrack(track);
+        }
+        track.onended = () => {
+          for (let id in peers) {
+            const sender = peers[id]._pc.getSenders().find(s => s.track.kind === "video");
+            sender.replaceTrack(localStream.getVideoTracks()[0]);
+          }
+        };
+      });
+    }
+    function endMeeting() {
+      for (let id in peers) {
+        peers[id].destroy();
+      }
+      peers = {};
+      alert("Meeting Ended!");
+      window.location.reload();
+    }
   </script>
 </body>
 </html>
