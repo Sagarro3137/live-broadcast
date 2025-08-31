@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Live Broadcast</title>
-  <style>
-    body { background:#111; color:#fff; text-align:center; font-family:Arial }
-    video { width: 480px; margin-top:20px; border:2px solid white; border-radius:8px }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Live Stream</h2>
-  <video id="player" autoplay playsinline controls></video>
+  <div class="meeting-window">
+    <div class="video-box">
+      <video id="player" autoplay playsinline></video>
+      <div class="live-indicator">LIVE</div>
+    </div>
+    <div class="controls">
+      <button onclick="fullscreen()">⛶ Fullscreen</button>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
@@ -37,6 +41,13 @@
       alert("Admin disconnected. Stream ended.");
       document.getElementById("player").srcObject = null;
     });
+
+    function fullscreen() {
+      let video = document.getElementById("player");
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
+    }
   </script>
 </body>
 </html>
