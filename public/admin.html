@@ -1,1 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Broadcast</title>
+  <style>
+    body { background:#111; color:#fff; text-align:center; font-family:Arial }
+    video { width: 480px; margin-top:20px; border:2px solid white; border-radius:8px }
+  </style>
+</head>
+<body>
+  <h2>Admin Live Broadcast</h2>
+  <video id="preview" autoplay playsinline muted></video>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+  <script>
+    const socket = io();
+    let localStream;
 
+    // মাইক + ক্যামেরা চালু
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        document.getElementById("preview").srcObject = stream;
+        localStream = stream;
+        socket.emit("join-as-admin");
+      });
+
+    // নতুন viewer এলে
+    socket.on("new-viewer", id => {
+      const peer = new SimplePeer({ initiator: true, trickle: false, stream: localStream });
+
+      peer.on("signal", signal => {
+        socket.emit("signal", { to: id, signal });
+      });
+
+      socket.on("signal", data => {
+        if (data.from === id) peer.signal(data.signal);
+      });
+    });
+  </script>
+</body>
+</html>
